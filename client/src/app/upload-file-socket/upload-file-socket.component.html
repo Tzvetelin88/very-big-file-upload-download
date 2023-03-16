@@ -1,0 +1,131 @@
+<mat-card style="width: 50vw; margin: auto">
+  <mat-card-header>
+    <mat-card-title>File Upload Socket</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <mat-tab-group>
+      <mat-tab label="Upload">
+        <div class="margin-bottom-15"></div>
+        <button mat-raised-button (click)="fileSelect.click()">
+          Select File
+        </button>
+        <button mat-raised-button (click)="upload()" [disabled]="!selectedFile">
+          Upload
+        </button>
+
+        <input
+          type="file"
+          hidden
+          #fileSelect
+          name="largeFile"
+          (change)="onFileSelect($event)"
+        />
+
+        <div class="margin-bottom-15"></div>
+        <h4 *ngIf="selectedFile && name.length > 0" class="div-info">
+          File Name: {{ selectedFile.name }} <br />
+          File Size: {{ bytesToSize(selectedFile.size) }}
+        </h4>
+        <!-- Show prepare message while socket returns data for uploading process -->
+        <div *ngIf="uploadPercent === 0">Prepare file for uploading...</div>
+        <div *ngIf="!selectedFile && fileUploaded">
+          File uploaded successfully.
+        </div>
+
+        <!-- Progress bar style -->
+        <mat-progress-bar
+          *ngIf="uploadPercent > 0 && uploadPercent !== 100"
+          mode="determinate"
+          value="{{ uploadPercent }}"
+        ></mat-progress-bar>
+        <div *ngIf="uploadPercent > 0 && uploadPercent !== 100">
+          {{ uploadPercent }} %
+        </div>
+        <div *ngIf="uploadedBytes">File data uploaded: {{ uploadedBytes }}</div>
+
+        <!-- Spinner style -->
+        <!-- <mat-progress-spinner
+        *ngIf="uploadPercent > 0"
+        class="example-margin"
+        [color]="color"
+        [mode]="mode"
+        [value]="uploadPercent"
+      >
+      </mat-progress-spinner> -->
+      </mat-tab>
+      <mat-tab label="Download">
+        <div class="margin-bottom-15"></div>
+        <button
+          mat-raised-button
+          (click)="download()"
+          [disabled]="inProgress || !fileToDownload"
+        >
+          {{ downloadTitle }}
+        </button>
+        <button
+          mat-raised-button
+          (click)="abortFileDownload('Cancel button was clicked!')"
+          [disabled]="!inProgress"
+        >
+          Cancel
+        </button>
+        <div class="margin-bottom-15"></div>
+
+        <!-- Download Progress bar -->
+        <mat-progress-bar
+          *ngIf="downloadPercent > 0 && !fileDownloaded"
+          mode="determinate"
+          value="{{ downloadPercent }}"
+        ></mat-progress-bar>
+        <div *ngIf="downloadPercent > 0 && !fileDownloaded">
+          {{ downloadPercent }} %
+        </div>
+        <!-- Show prepare message while socket returns data for downloading process -->
+        <div *ngIf="downloadPercent === 0">Prepare file for downloading...</div>
+        <div *ngIf="fileDownloaded" class="file-downloaded">
+          File downloaded successfully!
+        </div>
+
+        <div class="margin-bottom-15"></div>
+
+        <div class="uploaded-files-list">
+          Files Uploaded already: <br />
+          <span class="example-list-section">
+            <mat-radio-group
+              class="example-radio-group"
+              [value]="fileToDownload"
+            >
+              <mat-radio-button
+                class="example-radio-button"
+                *ngFor="let file of uploadedFiles"
+                (click)="fileSelection(file)"
+                [value]="file.name"
+              >
+                {{ file.name }} ({{ bytesToSize(file.size) }})
+              </mat-radio-button>
+            </mat-radio-group>
+            <!-- <mat-radio-group aria-label="Select an option">
+            <ul>
+              <li *ngFor="let file of uploadedFiles">
+                <mat-radio-button
+                  dio-button
+                  [value]="file"
+                  (change)="fileSelection(file)"
+                  >{{ file.name }} ({{
+                    bytesToSize(file.size)
+                  }})</mat-radio-button
+                >
+              </li>
+            </ul>
+          </mat-radio-group> -->
+          </span>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+
+    <div *ngIf="this.fileError" class="div-error">
+      {{ this.fileError }}
+    </div>
+  </mat-card-content>
+</mat-card>
