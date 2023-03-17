@@ -1,6 +1,6 @@
 <mat-card style="width: 50vw; margin: auto">
   <mat-card-header>
-    <mat-card-title>File Upload Socket</mat-card-title>
+    <mat-card-title>{{ fileManagerTitle }}</mat-card-title>
   </mat-card-header>
 
   <mat-card-content>
@@ -23,7 +23,7 @@
         />
 
         <div class="margin-bottom-15"></div>
-        <h4 *ngIf="selectedFile && name.length > 0" class="div-info">
+        <h4 *ngIf="selectedFile && selectedFile.length > 0" class="div-info">
           File Name: {{ selectedFile.name }} <br />
           File Size: {{ bytesToSize(selectedFile.size) }}
         </h4>
@@ -43,16 +43,6 @@
           {{ uploadPercent }} %
         </div>
         <div *ngIf="uploadedBytes">File data uploaded: {{ uploadedBytes }}</div>
-
-        <!-- Spinner style -->
-        <!-- <mat-progress-spinner
-        *ngIf="uploadPercent > 0"
-        class="example-margin"
-        [color]="color"
-        [mode]="mode"
-        [value]="uploadPercent"
-      >
-      </mat-progress-spinner> -->
       </mat-tab>
       <mat-tab label="Download">
         <div class="margin-bottom-15"></div>
@@ -105,20 +95,6 @@
                 {{ file.name }} ({{ bytesToSize(file.size) }})
               </mat-radio-button>
             </mat-radio-group>
-            <!-- <mat-radio-group aria-label="Select an option">
-            <ul>
-              <li *ngFor="let file of uploadedFiles">
-                <mat-radio-button
-                  dio-button
-                  [value]="file"
-                  (change)="fileSelection(file)"
-                  >{{ file.name }} ({{
-                    bytesToSize(file.size)
-                  }})</mat-radio-button
-                >
-              </li>
-            </ul>
-          </mat-radio-group> -->
           </span>
         </div>
       </mat-tab>

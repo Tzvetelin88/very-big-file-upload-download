@@ -12,25 +12,25 @@ import * as conf from '../../../../global.conf';
   styleUrls: ['./upload-file-socket.component.less'],
 })
 export class UploadFileSocketComponent implements OnInit, OnDestroy {
-  title = 'resumeUpload-ui';
-  abortSignal: boolean = false;
-  selectedFile: any;
+  fileManagerTitle = 'File Manager';
   fReader: any;
-  name: string = '';
+  fStream: any;
+  abortSignal: boolean = false;
+  // Uploading
+  selectedFile: any;
   uploadPercent: any;
   uploadedBytes: any;
   uploadedFiles: { name: string; size: number }[] = [];
   fileUploaded: boolean = false;
-  downloadPercent: any;
+  // Downloading
   fileToDownload: any;
+  downloadPercent: any;
   fileDownloaded: boolean = false;
+
   fileError: any;
   inProgress: boolean = false;
   downloadTitle = 'Download';
-  color = 'primary';
-  mode = 'determinate';
 
-  writer: any;
   subscription: Subscription;
 
   constructor(private socket: Socket, private router: Router) {
@@ -90,7 +90,6 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
     this.resetDownloading();
     this.fileError = null;
     this.selectedFile = event.target.files[0];
-    this.name = this.selectedFile.name;
   }
 
   upload() {
@@ -103,13 +102,13 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
 
     this.fReader.onload = (evnt: any) => {
       this.socket.emit('fileUpload', {
-        fileName: this.name,
+        fileName: this.selectedFile.name,
         data: evnt.target.result,
       });
     };
 
     this.socket.emit('fileInit', {
-      fileName: this.name,
+      fileName: this.selectedFile.name,
       size: this.selectedFile.size,
     });
   }
@@ -121,7 +120,7 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
     const fileStream = streamSaver.createWriteStream(this.fileToDownload.name, {
       size: this.fileToDownload.size, // (optional filesize) Will show progress
     });
-    this.writer = fileStream.getWriter();
+    this.fStream = fileStream.getWriter();
 
     // let dataToDownload: ArrayBuffer[] = [];
     this.socket.emit('fileDownload', {
@@ -133,9 +132,9 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
       (data: { percentage: any; bufferData: any }) => {
         this.downloadPercent = parseInt(data.percentage);
         // dataToDownload.push(data.bufferData);
-        this.writer.write(new Uint8Array(data.bufferData)).catch(() => {
+        this.fStream.write(new Uint8Array(data.bufferData)).catch(() => {
           console.error(`Download interupted due to aborted signal!`);
-          this.writer.abort();
+          this.fStream.abort();
           this.socket.emit('abortFileDownloading');
 
           this.abortSignal = true;
@@ -145,7 +144,7 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
     );
 
     this.socket.on('fileDownloaded', () => {
-      !this.abortSignal && this.writer.close();
+      !this.abortSignal && this.fStream.close();
       this.fileDownloaded = true;
       this.resetDownloading();
 
@@ -182,7 +181,6 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
     this.socket.on(
       'abortFileDownloadingStatus',
       (data: { abortStatus: boolean }) => {
-        console.log(`INSIDE 3 ..... ${data.abortStatus}`);
         if (data.abortStatus) {
           let errrorMessage = message
             ? message
