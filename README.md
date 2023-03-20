@@ -1,17 +1,22 @@
 # Solution Design
 
-Proper way to download or upload very big files with realtime data streaming and information.<br />
-Consume less memory and do not break or crash server or client browser.<br />
-Control Blob chunks to be r/w and streamed.<br />
-Resumability for uploaded files.<br />
-Cancelation for downloading file.<br />
-Handle Browser refresh and cancel downloading file.<br />
+- Proper way to download or upload very big files with realtime data streaming and information.<br />
+- Consume less memory and do not break or crash server or client browser.<br />
+- Control Blob chunks to be R/W and streamed.<br />
+- Resumability for uploaded files - continue uploading the file from the last written bytes on the server side.<br />
+- Cancelation for downloading file.<br />
+- Handle Browser refresh and cancel downloading file.<br />
 
-Using Socket.io for real time streaming.<br />
-NodeJS as backend using fs to r/w files in proper way.<br />
-Angular as Frontend is using StreamSaver to instruct client browser to write Blob chunks directly on client OS.<br />
+## Software set:
 
-### If file uploading interrupted, next time when we upload the same file it will continue uploading from where it left.
+- <b>Socket.io</b>: Bi-directional communication between client and server<br />
+- <b>NodeJS</b>: Backend using native fs to R/W files in proper way by defined chunk size.<br />
+- <b>Angular</b>: Frontend is using File System Access API to instruct client browser to write Blob chunks directly on client OS.<br />
+
+### More information:<br />
+
+- Window.showSaveFilePicker: https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker
+- Types: https://www.npmjs.com/package/@types/wicg-file-system-access <br />
 
 ## Application UI Example:
 
