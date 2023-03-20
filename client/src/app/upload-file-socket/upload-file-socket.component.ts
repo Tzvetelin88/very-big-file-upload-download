@@ -2,7 +2,6 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationStart, Router } from '@angular/router';
 import { Socket } from 'ngx-socket-io';
 import { Subscription } from 'rxjs';
-import * as streamSaver from 'streamsaver';
 
 import * as conf from '../../../../global.conf';
 
@@ -14,7 +13,7 @@ import * as conf from '../../../../global.conf';
 export class UploadFileSocketComponent implements OnInit, OnDestroy {
   fileManagerTitle = 'File Manager';
   fReader: any;
-  fStream: any;
+  fWriter: any;
   abortSignal: boolean = false;
   // Uploading
   selectedFile: any;
@@ -30,6 +29,9 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
   fileError: any;
   inProgress: boolean = false;
   downloadTitle = 'Download';
+
+  nativeSaveAs: boolean = false;
+  dataToDownload: ArrayBuffer[] = [];
 
   subscription: Subscription;
 
@@ -113,50 +115,53 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
     });
   }
 
-  download() {
+  async download() {
     this.inProgress = true;
     this.downloadTitle = 'Downloading...';
 
-    const fileStream = streamSaver.createWriteStream(this.fileToDownload.name, {
-      size: this.fileToDownload.size, // (optional filesize) Will show progress
-    });
-    this.fStream = fileStream.getWriter();
+    try {
+      // Show the file save dialog.
+      const handle = await window.showSaveFilePicker({
+        suggestedName: this.fileToDownload.name,
+      });
 
-    // let dataToDownload: ArrayBuffer[] = [];
+      // Write the blob to the file.
+      this.fWriter = await handle.createWritable();
+    } catch (err: any) {
+      this.resetDownloading();
+      return;
+    }
+
+    // If true - native saveAs
+    this.nativeSaveAs && (this.dataToDownload = []);
+
     this.socket.emit('fileDownload', {
       fileName: this.fileToDownload.name,
     });
 
     this.socket.on(
       'fileProgress',
-      (data: { percentage: any; bufferData: any }) => {
+      async (data: { percentage: any; bufferData: any }) => {
         this.downloadPercent = parseInt(data.percentage);
-        // dataToDownload.push(data.bufferData);
-        this.fStream.write(new Uint8Array(data.bufferData)).catch(() => {
-          console.error(`Download interupted due to aborted signal!`);
-          this.fStream.abort();
-          this.socket.emit('abortFileDownloading');
 
-          this.abortSignal = true;
-          this.resetDownloading();
-        });
+        // If true - native saveAs
+        this.nativeSaveAs && this.dataToDownload.push(data.bufferData);
+
+        try {
+          await this.fWriter.write(new Uint8Array(data.bufferData));
+        } catch (err: any) {
+          this.abortFileDownload();
+        }
       }
     );
 
-    this.socket.on('fileDownloaded', () => {
-      !this.abortSignal && this.fStream.close();
+    this.socket.on('fileDownloaded', async () => {
+      !this.abortSignal && (await this.fWriter.close());
       this.fileDownloaded = true;
       this.resetDownloading();
 
-      // Alternative use saveAs or:
-      // let blob: any = new Blob(dataToDownload);
-      // console.log(blob);
-      // const url = window.URL.createObjectURL(blob);
-      // const a = document.createElement('a');
-      // a.href = url;
-      // a.download = `dasdas.zip`;
-      // a.click();
-      // URL.revokeObjectURL(url);
+      // If true - native saveAs
+      this.nativeSaveAs && this.nativeSaveAsFn();
     });
 
     this.socket.on('fileError', (error: any) => {
@@ -192,6 +197,16 @@ export class UploadFileSocketComponent implements OnInit, OnDestroy {
         }
       }
     );
+  }
+
+  nativeSaveAsFn() {
+    let blob: any = new Blob(this.dataToDownload);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this.fileToDownload.name;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   bytesToSize(bytes: any) {
